@@ -47,13 +47,23 @@ async function bootstrap() {
   );
 
   const config = new DocumentBuilder()
-    .setTitle('Stellara API')
+    .setTitle('AgentPay Sentinel API')
     .setDescription(
-      'API for authentication, monitoring Stellar network events, and delivering webhooks',
+      'Backend API for testing, monitoring, and improving the reliability of autonomous x402 payments. ' +
+        'Includes payment simulation, failure injection, duplicate detection, policy validation, ' +
+        'settlement tracking, and report generation.',
     )
-    .setVersion('1.0')
+    .setVersion('0.1.0')
     .addTag('Authentication')
-    .addTag('Stellar Monitor')
+    .addTag('Users')
+    .addTag('Projects')
+    .addTag('Payments')
+    .addTag('Testing Engine')
+    .addTag('Chaos Lab')
+    .addTag('Policy Engine')
+    .addTag('Monitoring')
+    .addTag('Settlement')
+    .addTag('Reports')
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
@@ -68,7 +78,7 @@ async function bootstrap() {
   const port = process.env.PORT ?? 3000;
   await app.listen(port);
 
-  Logger.log(`Application is running on port ${port}`, 'Bootstrap');
+  Logger.log(`AgentPay Sentinel is running on port ${port}`, 'Bootstrap');
 }
 
 bootstrap().catch((err) => {

@@ -6,7 +6,6 @@ import {
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { RedisService } from '../redis/redis.service';
-import { StellarEventMonitorService } from '../stellar-monitor/services/stellar-event-monitor.service';
 
 @Controller('health')
 export class HealthController {
@@ -15,7 +14,6 @@ export class HealthController {
   constructor(
     private readonly dataSource: DataSource,
     private readonly redisService: RedisService,
-    private readonly stellarMonitorService: StellarEventMonitorService,
   ) {}
 
   @Get('live')
@@ -44,19 +42,6 @@ export class HealthController {
       this.logger.warn(`Redis health check failed: ${err.message}`);
       checks.redis = { status: 'error', message: err.message };
       allHealthy = false;
-    }
-
-    try {
-      const monitorStatus = this.stellarMonitorService.getStatus();
-      checks.stellarMonitor = {
-        status: monitorStatus.isMonitoring ? 'ok' : 'degraded',
-        isMonitoring: monitorStatus.isMonitoring,
-        lastLedgerSequence: monitorStatus.lastLedgerSequence,
-        horizonUrl: monitorStatus.horizonUrl,
-      };
-    } catch (err: any) {
-      this.logger.warn(`Stellar monitor health check failed: ${err.message}`);
-      checks.stellarMonitor = { status: 'error', message: err.message };
     }
 
     const response = {
