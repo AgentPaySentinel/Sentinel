@@ -1,1 +1,0 @@
-// Authorizations list page - placeholder
