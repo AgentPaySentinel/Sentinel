@@ -1,228 +1,120 @@
-# XLMPay Contract
+# AgentPay Sentinel – Soroban Contracts
 
-The Soroban smart contract that is the actual source of truth for XLMPay. This is where every payment authorization is stored, every limit is enforced, and every pull either succeeds or fails — not in the [`frontend/`](../frontend) and not in the [`backend/`](../backend).
+**On-chain components for testing and validating Stellar-based agent payment workflows.**
 
-If the frontend or backend disagree with what's on-chain, the chain is correct. Those two layers exist to make this contract easier to use; they have no authority of their own.
+AgentPay Sentinel is an open-source developer infrastructure platform for testing, monitoring, and improving the reliability of autonomous x402 payments. This repository contains the Soroban smart contracts and contract-level testing infrastructure for the platform's Stellar integration.
 
----
+## Overview
 
-# 🚀 What This Contract Does
+AgentPay Sentinel uses Stellar as its initial blockchain integration. While most payment simulations, monitoring, and policy analysis happen off-chain, some payment rules and records may require on-chain execution.
 
-The contract manages a single core concept: a **payment authorization** — a payer's standing, bounded permission for a specific recipient to pull funds on a schedule.
+This repository is intended to provide the Soroban components needed to test and validate those on-chain interactions.
 
-It is responsible for:
+The contracts are not designed to operate as a wallet, payment processor, or general-purpose payment gateway. They support the platform's testing and reliability objectives.
 
-* **Creating an authorization** — recorded only when signed by the payer themselves
-* **Enforcing limits on every pull** — amount cap, minimum interval since the last pull, expiry date / max pull count
-* **Executing a pull** — transferring funds directly from payer to recipient, only if all limits pass
-* **Revoking an authorization** — permanently, callable only by the payer, effective immediately
-* **Emitting events** for every state change (created, pulled, pull rejected, revoked) so the backend indexer and frontend can stay in sync without needing to trust each other
+## Planned Responsibilities
 
-The contract **never** custodies funds. Payer funds remain in the payer's account at all times; the contract only holds the authorization record and executes a transfer at pull time if — and only if — that pull is currently valid.
+The contract layer is intended to support:
 
----
+- **On-chain Policy Validation:** Explore enforcement of supported spending restrictions for Stellar payment flows.
+- **Payment Verification:** Provide contract-level checks for supported payment conditions where execution occurs through a Soroban contract.
+- **Payment Records:** Support verifiable on-chain records or events for relevant test scenarios, where needed.
+- **Test Scenarios:** Provide contract fixtures for testing authorization failures, invalid inputs, restricted operations, and other edge cases.
+- **Event Emission:** Expose relevant events that the backend can monitor and use when tracking supported on-chain activity.
 
-# 🧠 Core Concepts
+The exact contract interfaces and responsibilities will be finalized alongside the backend's Stellar adapter. Not every x402 payment needs a Soroban contract, and off-chain testing and monitoring will remain in the backend.
 
-### Authorization
+## Technology Stack
 
-The central data structure. An authorization defines:
+- Rust
+- Soroban SDK
+- Stellar network
+- Cargo
+- Stellar CLI
+- Soroban contract testing tools
 
-| Field | Description |
-|---|---|
-| `payer` | Address that owns the funds and signed the authorization |
-| `recipient` | Address allowed to call `pull()` against this authorization |
-| `asset` | The Stellar asset being paid (XLM or another Stellar asset contract) |
-| `max_amount` | Maximum amount that can be pulled in a single `pull()` call |
-| `min_interval` | Minimum time that must pass between consecutive successful pulls |
-| `expiry` | Timestamp (or max pull count) after which the authorization can no longer be used |
-| `status` | `active`, `expired`, or `revoked` |
-| `last_pull_at` | Timestamp of the most recent successful pull, used to enforce `min_interval` |
-
-### Pull
-
-A single execution attempt against an authorization. A `pull()` call:
-
-1. Loads the authorization by ID
-2. Checks `status == active`
-3. Checks `now >= last_pull_at + min_interval`
-4. Checks `now <= expiry` (or pull count `< max_pulls`)
-5. Checks requested amount `<= max_amount`
-6. If all checks pass: transfers funds payer → recipient, updates `last_pull_at`, emits a success event
-7. If any check fails: the call fails, no funds move, an event is emitted recording the rejection reason
-
-### Revocation
-
-Only the `payer` address on an authorization can revoke it. Revocation is immediate and permanent — there is currently no "pause and resume," only revoke-and-recreate. (See [roadmap](../README.md#-future-roadmap).)
-
----
-
-# 📜 Public Interface
-
-> Exact function signatures will evolve during development — this reflects the intended interface as of this writing. Treat as a working draft, not a frozen spec, until version 1.0.
-
-```rust
-// Create a new payment authorization. Must be invoked with the payer's signature.
-pub fn create_authorization(
-    env: Env,
-    payer: Address,
-    recipient: Address,
-    asset: Address,
-    max_amount: i128,
-    min_interval: u64,
-    expiry: u64,
-) -> u64; // returns authorization ID
-
-// Attempt to pull funds under an existing authorization. Callable by the recipient.
-pub fn pull(
-    env: Env,
-    authorization_id: u64,
-    amount: i128,
-) -> bool; // true if pull succeeded, fails/panics with reason otherwise
-
-// Revoke an authorization. Must be invoked with the payer's signature.
-pub fn revoke(
-    env: Env,
-    authorization_id: u64,
-);
-
-// Read-only: fetch the current state of an authorization.
-pub fn get_authorization(
-    env: Env,
-    authorization_id: u64,
-) -> Authorization;
-```
-
-### Events emitted
-
-| Event | Emitted when |
-|---|---|
-| `AuthorizationCreated` | A new authorization is successfully created |
-| `PullSucceeded` | A `pull()` call passes all checks and funds transfer |
-| `PullRejected` | A `pull()` call fails a check (includes the rejection reason) |
-| `AuthorizationRevoked` | A payer revokes an authorization |
-
-These events are what the backend indexer listens to — they are the only way off-chain components should learn about state changes.
-
----
-
-# 🔐 Authorization & Signing Rules
-
-These rules are the actual security boundary of the entire system. Everything else in this repo exists around them.
-
-* `create_authorization` **must** require the `payer`'s signature. A recipient cannot create or widen an authorization on someone else's behalf.
-* `pull` is called by the `recipient`, but it can **never** succeed beyond what the payer already signed off on at creation time. The recipient has no ability to raise `max_amount`, shorten `min_interval`, or extend `expiry`.
-* `revoke` **must** require the `payer`'s signature. No one else — not the recipient, not the backend, not an XLMPay-controlled key — can revoke or freeze an authorization on the payer's behalf, and equally, no one else can prevent a payer from revoking.
-* There is intentionally no "admin" or upgrade key in the core authorization/pull/revoke logic that could override payer-set limits. Any future governance or upgrade mechanism (see roadmap) must not be able to retroactively change the terms of an existing authorization.
-
----
-
-# ⚠️ Threat Model & Known Open Questions
-
-| Risk | How the contract addresses it | Status |
-|---|---|---|
-| Recipient tries to pull more than `max_amount` | Rejected at the `pull()` check | Implemented |
-| Recipient pulls more frequently than `min_interval` | Rejected via `last_pull_at` check | Implemented |
-| Recipient pulls after `expiry` or after revocation | Rejected via `status`/`expiry` check | Implemented |
-| Reentrancy during the transfer step of `pull()` | Needs explicit handling — transfer should be the last action in the function, state updated before transfer completes | **Needs verification in implementation** |
-| Integer overflow/underflow on amount or timestamp arithmetic | Should use checked arithmetic throughout | **Needs verification in implementation** |
-| Front-running of `pull()` calls | Pulls are deterministic given authorization state; unclear if there's any meaningful front-running surface, but not yet formally analyzed | **Open question** |
-| Payer revokes mid-flight while a `pull()` is in the same ledger close | Needs explicit ordering guarantee or atomic check-then-act within a single transaction | **Needs verification in implementation** |
-| Upgradeable contract logic changing rules retroactively | No upgrade mechanism in the core contract by default; any future upgrade path must not retroactively alter existing authorizations | Design constraint, not yet implemented |
-
-This contract has **not been audited**. Do not deploy to mainnet with real funds until an independent security review has been completed. See the [root README's Threat Model](../README.md#%EF%B8%8F-threat-model--limitations) for project-wide risk context.
-
----
-
-# 📁 Folder Structure
+## Project Structure
 
 ```text
-contract/
-│
-├── src/
-│   ├── lib.rs                  # Contract entrypoints (create_authorization, pull, revoke, etc.)
-│   ├── types.rs                # Authorization struct and related types
-│   ├── errors.rs                # Custom error/rejection reasons
-│   └── events.rs                # Event definitions
-│
+agentpay-sentinel-contract/
+├── contracts/
+│   ├── policy-registry/
+│   ├── payment-recorder/
+│   └── test-fixtures/
 ├── tests/
-│   ├── create_authorization.rs
-│   ├── pull.rs
-│   ├── revoke.rs
-│   └── edge_cases.rs            # interval boundaries, expiry boundaries, overflow cases
-│
+├── scripts/
 ├── Cargo.toml
 ├── Cargo.lock
-└── README.md                    # This file
+├── .env.example
+└── README.md
 ```
 
----
+Contract directories represent proposed components. They should only be implemented where they serve a clear requirement in the platform's Stellar integration.
 
-# 📦 Installation & Setup
+## Getting Started
 
-## Prerequisites
+### Prerequisites
 
-* Rust (stable toolchain)
-* [Soroban CLI](https://developers.stellar.org/docs/tools/cli)
-* `wasm32-unknown-unknown` target installed:
+- Rust
+- Cargo
+- Stellar CLI
+- Git
+
+Follow the official Stellar developer documentation to install and configure the required Soroban development tools.
+
+### Clone the Repository
 
 ```bash
-rustup target add wasm32-unknown-unknown
+git clone https://github.com/YOUR-ORG/agentpay-sentinel-contract.git
+cd agentpay-sentinel-contract
 ```
 
-## Build
+### Build Contracts
 
 ```bash
-cd contract
-soroban contract build
+cargo build --target wasm32-unknown-unknown --release
 ```
 
-This produces a `.wasm` file under `target/wasm32-unknown-unknown/release/`.
-
-## Run Tests
-
-```bash
-cargo test
-```
-
-## Deploy (Testnet Example)
-
-```bash
-soroban contract deploy \
-  --wasm target/wasm32-unknown-unknown/release/xlmpay_contract.wasm \
-  --source <your-testnet-identity> \
-  --network testnet
-```
-
-> Replace `<your-testnet-identity>` with a configured Soroban CLI identity. Never deploy with a mainnet identity until the contract has been audited.
-
----
-
-# 🧪 Testing Philosophy
-
-Test coverage should specifically target the boundary conditions, since those are where authorization logic is most likely to have bugs:
-
-* exact-boundary timing (`pull()` called at exactly `last_pull_at + min_interval`)
-* exact-boundary amounts (`amount == max_amount` vs. `amount == max_amount + 1`)
-* exact-boundary expiry (`pull()` at the exact expiry timestamp)
-* pulling immediately after revocation
-* pulling on an authorization that never existed / wrong recipient calling `pull()`
-* repeated rapid `pull()` calls in the same ledger
+### Run Tests
 
 ```bash
 cargo test
 ```
 
-Passing tests are a baseline, not a substitute for an external audit before mainnet deployment.
+Contract-specific build and deployment commands will be documented as the contracts are implemented.
 
----
+## Backend Integration
 
-# 🤝 Contributing
+The contracts are designed to work with the AgentPay Sentinel backend.
 
-See the [root README](../README.md) for overall contribution guidelines. Contract-specific notes:
+The backend will be responsible for:
 
-* Any change to `pull()`, `create_authorization()`, or `revoke()` logic requires accompanying tests for the boundary conditions listed above
-* Do not introduce admin/upgrade keys capable of altering existing authorizations without extensive discussion and documentation — this directly conflicts with the project's non-custodial design goal
-* Security researchers: please report findings privately first; see `SECURITY.md` (to be added) for responsible disclosure guidelines
+- Preparing and submitting supported contract interactions.
+- Handling network communication.
+- Monitoring contract events.
+- Interpreting transaction results.
+- Connecting on-chain results to payment test reports.
 
----
+The contracts will not handle dashboard operations, payment simulation orchestration, or general-purpose monitoring.
+
+Backend repository: `agentpay-sentinel-backend`
+
+## Security Considerations
+
+Security is a core requirement for every on-chain component.
+
+Development will prioritize:
+
+- Explicit authorization checks.
+- Input validation.
+- Safe handling of contract state.
+- Protection against unauthorized operations.
+- Tests for invalid and unexpected inputs.
+- Clear event and error handling.
+- Avoiding unnecessary custody of user funds.
+
+Contracts must be thoroughly tested before deployment to any public network.
+
+## Development Status
+
+This repository is under development. The contract components and interfaces described in this README are proposed design directions, not claims of existing functionality.
