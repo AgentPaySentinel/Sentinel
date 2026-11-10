@@ -1,1 +1,129 @@
 @import "tailwindcss";
+
+/*
+ * AgentPay Sentinel — design tokens
+ * Tailwind v4 uses a CSS-first config: tokens declared in `@theme` generate
+ * utility classes (e.g. --color-brand-500 -> bg-brand-500 / text-brand-500).
+ *
+ * Brand direction: red + blue on a dark near-black navy background.
+ *   - brand (blue):  primary actions, nav highlights, important info
+ *   - danger (red):   security warnings, failed txns, critical alerts, destructive
+ *   - success/warning: status accents for monitoring states
+ *   - ink (navy):     surface/scaffold scale
+ * Neutrals reuse Tailwind's built-in slate scale so we don't reinvent greys.
+ */
+@theme {
+  /* --- Surfaces: near-black navy scaffold --- */
+  --color-ink-950: #060912;
+  --color-ink-900: #0a0f1c;
+  --color-ink-850: #0d1322;
+  --color-ink-800: #111829;
+  --color-ink-750: #161f36;
+  --color-ink-700: #1c2742;
+  --color-ink-600: #283456;
+  --color-ink-500: #3a476b;
+
+  /* --- Borders / dividers --- */
+  --color-line: #1a2238;
+  --color-line-strong: #2a3654;
+
+  /* --- Brand blue (primary) --- */
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-300: #93c5fd;
+  --color-brand-400: #60a5fa;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e40af;
+  --color-brand-900: #1e3a8a;
+
+  /* --- Danger red (alerts / failures / destructive) --- */
+  --color-danger-50: #fef2f2;
+  --color-danger-100: #fee2e2;
+  --color-danger-200: #fecaca;
+  --color-danger-300: #fca5a5;
+  --color-danger-400: #f87171;
+  --color-danger-500: #ef4444;
+  --color-danger-600: #dc2626;
+  --color-danger-700: #b91c1c;
+  --color-danger-800: #991b1b;
+  --color-danger-900: #7f1d1d;
+
+  /* --- Status accents --- */
+  --color-success-400: #34d399;
+  --color-success-500: #10b981;
+  --color-success-600: #059669;
+  --color-warning-400: #fbbf24;
+  --color-warning-500: #f59e0b;
+  --color-warning-600: #d97706;
+
+  /* --- Typography --- */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", "JetBrains Mono", Menlo,
+    Consolas, monospace;
+
+  /* --- Radius --- */
+  --radius-lg: 0.75rem;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--color-ink-950);
+    color: #cbd5e1; /* slate-300 */
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  *:focus-visible {
+    outline: 2px solid var(--color-brand-500);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  /* Dark-theme scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-ink-600) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: var(--color-ink-600);
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-ink-500);
+  }
+
+  ::selection {
+    background-color: color-mix(in srgb, var(--color-brand-500) 35%, transparent);
+    color: #fff;
+  }
+}
+
+@layer components {
+  /* Shared surface card used across pages (kept generic + minimal) */
+  .surface {
+    background-color: var(--color-ink-900);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-lg);
+  }
+}
