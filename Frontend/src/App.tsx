@@ -1,15 +1,29 @@
+import { BrowserRouter } from "react-router-dom";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { AppRoutes } from "./routes";
+import { queryClient } from "./services/queries/queryClient";
+import { EnvironmentProvider } from "./context/EnvironmentContext";
+
+/**
+ * Root application component.
+ *
+ * Provider order (outermost -> innermost):
+ *   1. QueryClientProvider — data layer (TanStack Query)
+ *   2. EnvironmentProvider — selected dev/testnet/production indicator state
+ *   3. BrowserRouter        — routing
+ *
+ * The route tree (sidebar + top bar shell + pages) lives in `./routes`.
+ */
 function App() {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center p-8">
-      <div className="max-w-2xl text-center">
-        <h1 className="text-4xl font-bold tracking-tight">AgentPay Sentinel</h1>
-        <p className="mt-4 text-lg text-slate-400">
-          Developer dashboard for testing, monitoring, and securing autonomous x402 payments.
-        </p>
-        <p className="mt-2 text-sm text-slate-600">Frontend scaffold ready.</p>
-      </div>
-    </div>
-  )
+    <QueryClientProvider client={queryClient}>
+      <EnvironmentProvider>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </EnvironmentProvider>
+    </QueryClientProvider>
+  );
 }
 
-export default App
+export default App;
