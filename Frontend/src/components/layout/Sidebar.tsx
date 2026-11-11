@@ -124,6 +124,10 @@ function SidebarContent({
 
       {/* Navigation */}
       <nav aria-label="Primary" className="flex-1 overflow-y-auto px-2.5 py-3">
+      <nav
+        aria-label="Primary"
+        className="flex-1 overflow-y-auto px-2.5 py-3"
+      >
         <ul className="flex flex-col gap-1">
           {navConfig.map((item) => (
             <li key={item.path}>

@@ -3,6 +3,9 @@ import { PageHeader } from "../../components/layout/PageHeader";
 import { PagePlaceholder } from "../../components/ui/PagePlaceholder";
 
 /** Reports — test summaries, failure distribution and performance. */
+/**
+ * Reports — test summaries, failure distribution and performance.
+ */
 export default function ReportsPage() {
   return (
     <div className="space-y-6">

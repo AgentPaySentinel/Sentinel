@@ -100,6 +100,7 @@ export function UserMenu() {
 
 interface MenuItemProps {
   icon: ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+  icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
   label: string;
   onSelect: () => void;
   tone?: "default" | "danger";

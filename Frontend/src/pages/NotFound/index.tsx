@@ -4,6 +4,10 @@ import { PageHeader } from "../../components/layout/PageHeader";
 import { Button } from "../../components/ui/Button";
 
 /** Fallback for unknown routes. Rendered inside the layout shell. */
+/**
+ * Fallback for unknown routes. Rendered inside the layout so navigation
+ * remains available.
+ */
 export default function NotFoundPage() {
   return (
     <div className="space-y-6">

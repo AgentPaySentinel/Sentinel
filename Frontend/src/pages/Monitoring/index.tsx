@@ -3,6 +3,9 @@ import { PageHeader } from "../../components/layout/PageHeader";
 import { PagePlaceholder } from "../../components/ui/PagePlaceholder";
 
 /** Payment Monitoring — track payment events, statuses and settlement. */
+/**
+ * Payment Monitoring — track payment events, statuses and settlement.
+ */
 export default function MonitoringPage() {
   return (
     <div className="space-y-6">
