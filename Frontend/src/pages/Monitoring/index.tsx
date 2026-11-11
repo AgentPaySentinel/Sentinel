@@ -2,6 +2,7 @@ import { Activity } from "lucide-react";
 import { PageHeader } from "../../components/layout/PageHeader";
 import { PagePlaceholder } from "../../components/ui/PagePlaceholder";
 
+/** Payment Monitoring — track payment events, statuses and settlement. */
 /**
  * Payment Monitoring — track payment events, statuses and settlement.
  */

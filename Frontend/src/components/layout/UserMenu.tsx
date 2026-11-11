@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { ComponentType } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronDown, LogOut, Settings as SettingsIcon, UserCircle } from "lucide-react";
 import { cn } from "../../utils/cn";
@@ -98,6 +99,7 @@ export function UserMenu() {
 }
 
 interface MenuItemProps {
+  icon: ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
   icon: React.ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
   label: string;
   onSelect: () => void;

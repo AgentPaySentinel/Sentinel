@@ -2,6 +2,7 @@ import { FlaskConical } from "lucide-react";
 import { PageHeader } from "../../components/layout/PageHeader";
 import { PagePlaceholder } from "../../components/ui/PagePlaceholder";
 
+/** Payment Testing — configure and execute simulated payment workflows. */
 /**
  * Payment Testing — configure and execute simulated payment workflows.
  */

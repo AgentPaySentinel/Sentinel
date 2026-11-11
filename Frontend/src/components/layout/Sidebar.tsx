@@ -123,6 +123,7 @@ function SidebarContent({
       </div>
 
       {/* Navigation */}
+      <nav aria-label="Primary" className="flex-1 overflow-y-auto px-2.5 py-3">
       <nav
         aria-label="Primary"
         className="flex-1 overflow-y-auto px-2.5 py-3"
